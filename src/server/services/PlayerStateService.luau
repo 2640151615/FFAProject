@@ -36,6 +36,32 @@ function PlayerStateService.get(player)
 	return states[player]
 end
 
+-- 扣血。返回 扣后血量, 是否致死。
+--
+-- 已死玩家直接不结算，返回 nil, false——这是 Review Focus 第 4 条
+--（开火瞬间玩家死亡），CombatService 那边还有一道同样的闸。
+function PlayerStateService.applyDamage(player, amount)
+	local state = states[player]
+	if not state or not state.alive then
+		return nil, false
+	end
+
+	state.health = math.max(0, state.health - amount)
+	local killed = state.health <= 0
+	if killed then
+		state.alive = false
+	end
+	return state.health, killed
+end
+
+function PlayerStateService.markDead(player)
+	local state = states[player]
+	if state then
+		state.alive = false
+		state.health = 0
+	end
+end
+
 Players.PlayerAdded:Connect(function(player)
 	PlayerStateService.ensure(player)
 end)

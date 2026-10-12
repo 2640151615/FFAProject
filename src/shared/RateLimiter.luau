@@ -18,12 +18,27 @@ function RateLimiter.new(ratePerSecond, burst)
 	return self
 end
 
+-- 到 now 为止应有的令牌数。纯计算，不改状态。
+function RateLimiter:refilled(now)
+	if self.lastRefill == nil or now <= self.lastRefill then
+		return self.tokens
+	end
+	return math.min(self.capacity, self.tokens + (now - self.lastRefill) * self.rate)
+end
+
+-- 只读查询：会不会放行。
+--
+-- 给 WeaponService.canFire 用——判定阶段只查不消耗，后续任何一步失败
+-- 都不该扣掉玩家的限速额度。不推进 lastRefill，也不改 tokens。
+function RateLimiter:peek(now)
+	return self:refilled(now) >= 1
+end
+
 function RateLimiter:allow(now)
 	if self.lastRefill == nil then
 		self.lastRefill = now
 	elseif now > self.lastRefill then
-		local elapsed = now - self.lastRefill
-		self.tokens = math.min(self.capacity, self.tokens + elapsed * self.rate)
+		self.tokens = self:refilled(now)
 		self.lastRefill = now
 	end
 

@@ -38,6 +38,38 @@ describe("RateLimiter", function()
 		expect(rl:allow(0)):toBe(false)
 		expect(rl:allow(1)):toBe(true) -- 一秒后回填 1 个
 	end)
+	-- peek 是给 WeaponService.canFire 用的：判定阶段只查不消耗，
+	-- 任何后续步骤失败都不能扣掉玩家的限速额度。
+	it("peek 不消耗令牌", function()
+		local RateLimiter = kit.load("RateLimiter")
+		local rl = RateLimiter.new(1, 2)
+		expect(rl:peek(0)):toBe(true)
+		expect(rl:peek(0)):toBe(true) -- 反复查看仍然是 true
+		expect(rl:allow(0)):toBe(true) -- 真正消耗时才减
+		expect(rl:allow(0)):toBe(true)
+		expect(rl:peek(0)):toBe(false) -- 两个令牌用完了
+	end)
+
+	it("peek 反映回填且不推进时钟", function()
+		local RateLimiter = kit.load("RateLimiter")
+		local rl = RateLimiter.new(1, 1)
+		expect(rl:allow(0)):toBe(true)
+		expect(rl:peek(0)):toBe(false)
+		expect(rl:peek(1)):toBe(true) -- 一秒后回填
+		expect(rl:peek(1)):toBe(true) -- 再查一次仍为 true，说明 peek 没消耗
+		expect(rl:allow(1)):toBe(true) -- 紧接着真消耗，仍然拿得到
+		expect(rl:peek(1)):toBe(false)
+	end)
+
+	it("peek 也受 burst 封顶", function()
+		local RateLimiter = kit.load("RateLimiter")
+		local rl = RateLimiter.new(20, 5)
+		for _ = 1, 5 do rl:allow(0) end
+		expect(rl:peek(3600)):toBe(true)
+		expect(rl:allow(3600)):toBe(true)
+		for _ = 1, 4 do expect(rl:allow(3600)):toBe(true) end
+		expect(rl:peek(3600)):toBe(false) -- 挂机一小时也只回填到 burst
+	end)
 end)
 
 return true
