@@ -17,17 +17,35 @@ local function now()
 	return workspace:GetServerTimeNow()
 end
 
--- 竞技公平：剥掉玩家的配件（帽子 / 头发）。
+-- 把玩家外观归一到"朴素 R6 方块人"。
 --
--- 配件会改变命中剪影。`Pal Hair` 这类配件的 Handle 就在头的位置，
--- 射线有可能先命中配件而不是头——那样一次本该爆头的枪（伤害 × headshotMultiplier）
--- 会退化成普伤。戴不戴帽子不该影响对枪结果。
+-- 剥掉三类东西，理由各不相同：
 --
--- 用 DescendantAdded 兜底：引擎有时在 CharacterAdded 之后才把配件挂上来，
--- 只在 CharacterAdded 那一刻扫一遍会漏。
-local function stripAccessories(character)
+--   1. `Accessory`（帽子/头发）——竞技公平。配件的 Handle 就在头的位置，
+--      射线可能先命中配件而不是头，把本该爆头的枪（伤害 × headshotMultiplier）
+--      退化成普伤。戴不戴帽子不该影响对枪结果。
+--
+--   2. `CharacterMesh`——外观一致，也是这次真正被漏掉的一项。
+--      R6 骨架本身是方块人，但 CharacterMesh 会在**视觉上**把方块部件替换成网格模型
+--      （服装包），于是出现"骨架是 R6、看着却不像 R6"。它不改变碰撞盒，
+--      所以命中判定是对的，只是看起来不对。
+--
+--   3. `Shirt` / `Pants`——同上，而且深色服装本身就是一种伪装优势。
+--
+-- **保留 `BodyColors`**：它只是给方块部件上色，不改变形状，还能帮助分辨玩家。
+--
+-- 用 DescendantAdded 兜底：引擎有时在 CharacterAdded 之后才把这些挂上来，
+-- 只在那一刻扫一遍会漏。
+local STRIPPED_CLASSES = {
+	Accessory = true,
+	CharacterMesh = true,
+	Shirt = true,
+	Pants = true,
+}
+
+local function normalizeAppearance(character)
 	local function strip(instance)
-		if instance:IsA("Accessory") then
+		if STRIPPED_CLASSES[instance.ClassName] then
 			instance:Destroy()
 		end
 	end
@@ -39,9 +57,9 @@ local function stripAccessories(character)
 end
 
 local function watchPlayer(player)
-	player.CharacterAdded:Connect(stripAccessories)
+	player.CharacterAdded:Connect(normalizeAppearance)
 	if player.Character then
-		stripAccessories(player.Character)
+		normalizeAppearance(player.Character)
 	end
 end
 
