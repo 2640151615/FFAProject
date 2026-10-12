@@ -1,0 +1,10 @@
+# Roblox place 文件：二进制，且不是真相源（Rojo 才是）
+*.rbxl
+*.rbxlx
+*.rbxl.lock
+
+# 机器相关的 Claude 配置（含本机权限列表，不应共享）
+.claude/settings.local.json
+
+# SDD 草稿工作区
+.superpowers/
