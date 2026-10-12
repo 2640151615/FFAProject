@@ -121,6 +121,10 @@ function CombatService.resolveShot(shooter, direction, timestamp)
 		return false
 	end
 
+	-- 开火即解除自己的出生保护——玩家一旦行动，无敌就不该继续。
+	-- 放在这里而不是 Net.Fire 的接线里：走 resolveShot 的任何路径（含服务器内部调用）都算数。
+	SpawnService.breakProtection(shooter)
+
 	-- 方向必须是有效向量：远程事件可以传任何东西
 	if typeof(direction) ~= "Vector3" then
 		return false
@@ -191,7 +195,17 @@ function CombatService.resolveShot(shooter, direction, timestamp)
 		-- 已死玩家不再结算（Review Focus 第 4 条）；
 		-- 出生保护期内命中但掉血被跳过。
 		if targetState and targetState.alive and not SpawnService.isProtected(hitPlayer) then
-			PlayerStateService.applyDamage(hitPlayer, Damage.compute(weapon, hitPartName))
+			local newHealth = PlayerStateService.applyDamage(hitPlayer, Damage.compute(weapon, hitPartName))
+
+			-- 服务器的状态是权威的，但要把它推给角色的 Humanoid，
+			-- 否则引擎不知道玩家死了——不会触发 Died、不会播死亡表现、也不会重生。
+			if newHealth then
+				local humanoid = hitPlayer.Character
+					and hitPlayer.Character:FindFirstChildWhichIsA("Humanoid")
+				if humanoid then
+					humanoid.Health = newHealth
+				end
+			end
 		end
 	end
 
