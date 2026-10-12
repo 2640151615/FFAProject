@@ -1,25 +1,33 @@
--- 极简断言骨架。只做三件事：收集用例、跑、汇总退出码。
--- 刻意不引第三方框架：回归防线不该押在小众包的维护状况上。
+-- 极简断言骨架（Roblox 版）。
 --
--- 注意：这是单例（Lune 的 require 有缓存），所有 spec 共用同一份 suites。
--- 因此 spec 文件只负责注册，绝不能自己调 run()——
--- 否则第二个 spec 会把第一个的用例重跑一遍、通过数翻倍。
--- 统一由 test/run.luau 在加载完全部 spec 后调用一次。
+-- 经 MCP 调用 require(ServerStorage.__tests.run) 拿到汇总表，
+-- 而不是终止进程——Roblox 里没有 process，也没有任何 Lune 全局。
+--
+-- 单例：所有 spec 共用同一份 suites（ModuleScript 的 require 有缓存），
+-- 所以 spec 只负责注册，绝不自己调 run()。
+-- 若每个 spec 各调一次 run()，先前的用例会被重复执行、通过数翻倍。
 
 local harness = {}
 
--- Lune 0.10.5 不提供任何全局（process / fs 等），一律 require。
--- 用全局 process 会得到 "attempt to index nil with 'exit'"。
-local process = require("@lune/process")
-
 local suites = {}
 local currentSuite = nil
-local failures = {}
-local passed = 0
 
 function harness.describe(name, fn)
-	currentSuite = { name = name, cases = {} }
-	table.insert(suites, currentSuite)
+	local suite = { name = name, cases = {} }
+	-- 同名 suite 覆盖而不是追加。require 有缓存，正常每个 spec 只注册一次；
+	-- 但反复调试时同一个 spec 可能以不同实例被注册多次（旧实例的注册不会消失），
+	-- 不去重就会重复计数、通过数翻倍。
+	for i, existing in ipairs(suites) do
+		if existing.name == name then
+			suites[i] = suite
+			currentSuite = suite
+			fn()
+			currentSuite = nil
+			return
+		end
+	end
+	table.insert(suites, suite)
+	currentSuite = suite
 	fn()
 	currentSuite = nil
 end
@@ -45,7 +53,7 @@ end
 function expectValue:toEqual(expected)
 	local function deepEq(a, b)
 		if type(a) ~= type(b) then return false end
-		-- Vector2 / Vector3 等是非 table 类型，直接比相等
+		-- CFrame / Vector3 等非 table 类型直接比相等
 		if type(a) ~= "table" then return a == b end
 		for k, v in pairs(a) do
 			if not deepEq(v, b[k]) then return false end
@@ -70,30 +78,37 @@ function expectValue:toThrow()
 	if ok then fail("期望抛出错误，但没有") end
 end
 
+function expectValue:toBeCloseTo(expected, tolerance)
+	local t = tolerance or 1e-6
+	if type(self.value) ~= "number" then fail("toBeCloseTo 需要数字") end
+	if math.abs(self.value - expected) > t then
+		fail(string.format("期望接近 %s（容差 %s），实际 %s", tostring(expected), tostring(t), tostring(self.value)))
+	end
+end
+
 function harness.expect(value)
 	return setmetatable({ value = value }, expectValue)
 end
 
+-- 返回汇总而不是退出。调用方（MCP）自己判断 failed 是否为 0。
 function harness.run()
+	local passed, failures = 0, {}
 	for _, suite in ipairs(suites) do
 		for _, case in ipairs(suite.cases) do
 			local ok, err = pcall(case.fn)
 			if ok then
 				passed += 1
 			else
-				table.insert(failures, string.format("%s > %s\n    %s", suite.name, case.name, tostring(err)))
+				table.insert(failures, string.format("%s > %s — %s", suite.name, case.name, tostring(err)))
 			end
 		end
 	end
-
-	print(string.format("\n%d 通过，%d 失败\n", passed, #failures))
-	for _, f in ipairs(failures) do
-		print("失败: " .. f)
-	end
-
-	if #failures > 0 then
-		process.exit(1)
-	end
+	return {
+		passed = passed,
+		failed = #failures,
+		total = passed + #failures,
+		failures = failures,
+	}
 end
 
 return harness

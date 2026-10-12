@@ -15,10 +15,6 @@
 --   viewmodelPose    相机空间下的静止 CFrame。
 -- 音效就是普通 asset id，由客户端播放。
 
--- 经 Datatypes 取 CFrame，而不是直接用全局——这样本模块能在 Lune 下加载并被单测。
-local Roblox = require("./Datatypes")
-local CFrame = Roblox.CFrame
-
 local Weapons = {}
 
 Weapons.Default = "Rifle"

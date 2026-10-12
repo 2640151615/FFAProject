@@ -14,6 +14,13 @@
       "$ignoreUnknownInstances": true
     },
 
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "__tests": {
+        "$path": "test"
+      }
+    },
+
     "StarterPlayer": {
       "$className": "StarterPlayer",
       "StarterPlayerScripts": {
