@@ -13,6 +13,7 @@
 
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
 
 local Net = require(ReplicatedStorage:WaitForChild("Net"))
 
@@ -206,6 +207,14 @@ function HudController.init()
 	if screenGui then
 		return
 	end
+
+	-- 关掉引擎自带的血条。
+	--
+	-- 注意别和 `Humanoid.HealthDisplayType` 搞混，那是两样不同的东西：
+	--   · 这一条关的是 **CoreGui 的 Health 组件**——右上角那个、受伤时才冒出来的屏幕 UI。
+	--   · `Humanoid.HealthDisplayType` 管的是 **角色头顶那个 3D 血条**，在 SpawnService 里设成 AlwaysOff。
+	-- 两个都要关，否则各冒各的。
+	StarterGui:SetCoreGuiEnabled(Enum.CoreGuiType.Health, false)
 
 	screenGui = Instance.new("ScreenGui")
 	screenGui.Name = "FFA_Hud"
