@@ -19,4 +19,13 @@ Config.RequestBurst = 40
 Config.HitmarkerSound = "rbxassetid://160432334"
 Config.KillSound = nil
 
+-- 触屏弱辅助瞄准。
+--
+-- `AimAssistMaxAngle` 是**硬上限**，不是建议值：无论目标偏多远、强度设多大，
+-- 偏转角都被夹在它之内。调大这个数就等于把游戏推向"自动跟枪"，
+-- 而那正是设计文档写死的反目标。想改的话先回去读一遍反目标那节。
+Config.AimAssistMaxAngle = 3
+Config.AimAssistStrength = 1
+Config.AimAssistRange = 120
+
 return Config

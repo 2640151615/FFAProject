@@ -11,18 +11,82 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
 
 local Net = require(ReplicatedStorage:WaitForChild("Net"))
 local Weapons = require(ReplicatedStorage:WaitForChild("Weapons"))
+local Config = require(ReplicatedStorage:WaitForChild("Config"))
 local Input = require(script.Parent.Input)
 local ViewModel = require(script.Parent.ViewModel)
 local Recoil = require(script.Parent.Recoil)
+local AimAssist = require(script.Parent.AimAssist)
 
 local WeaponController = {}
 
 local player = Players.LocalPlayer
 local currentWeaponId = Weapons.Default
 local recoil = Recoil.new()
+
+-- 辅助瞄准只给触屏。
+--
+-- 设计文档定死了：PC 的手感是竞技基准，辅助是给触屏的补偿手段，
+-- 不能反过来。PC 一旦也走辅助，基准就歪了——那种"两边都觉得不对"的歪法。
+--
+-- 每次开火时读，而不是模块加载时读一次：触屏笔记本这类设备可能中途
+-- 换用键盘鼠标，加载时的快照会一直用错。
+local function usesTouch()
+	return UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+end
+
+local aimAssist = AimAssist.new(Config.AimAssistMaxAngle, Config.AimAssistStrength)
+
+-- 收集可以辅助的目标方向。
+--
+-- 除了距离和锥角，还要**射线确认没被挡住**——否则隔着墙也会被吸，
+-- 等于给触屏玩家发了一个"墙后有没有人"的探测器，那是白送信息。
+local function aimCandidates(origin, aim)
+	local character = player.Character
+
+	-- Camera 也在 Workspace 下，而视图模型挂在 Camera 上。
+	-- 不把 Camera 排除掉的话，射线第一件事就是打中自己的枪，
+	-- 于是每个目标都被判成"被挡住"——辅助静默失效，而且正常游玩下完全看不出。
+	local filter = { workspace.CurrentCamera }
+	if character then
+		table.insert(filter, character)
+	end
+
+	local params = RaycastParams.new()
+	params.FilterType = Enum.RaycastFilterType.Exclude
+	params.FilterDescendantsInstances = filter
+	params.IgnoreWater = true
+
+	local withinCone = math.cos(math.rad(45))
+	local candidates = {}
+
+	for _, other in ipairs(Players:GetPlayers()) do
+		if other ~= player then
+			local otherCharacter = other.Character
+			local head = otherCharacter and otherCharacter:FindFirstChild("Head")
+			if head then
+				local delta = head.Position - origin
+				local distance = delta.Magnitude
+
+				if distance > 0.1 and distance <= Config.AimAssistRange then
+					local unit = delta.Unit
+					if unit:Dot(aim) >= withinCone then
+						local hit = workspace:Raycast(origin, delta, params)
+						local blocked = hit ~= nil and not hit.Instance:IsDescendantOf(otherCharacter)
+						if not blocked then
+							table.insert(candidates, unit)
+						end
+					end
+				end
+			end
+		end
+	end
+
+	return candidates
+end
 
 function WeaponController.getWeaponId()
 	return currentWeaponId
@@ -34,11 +98,19 @@ function WeaponController.onFire()
 		return
 	end
 
+	local direction = camera.CFrame.LookVector
+
+	-- 触屏才做辅助。它在**开火瞬间**把方向轻推一点，而不是每帧拽相机——
+	-- 后者就是自动跟枪了，撞反目标。
+	if usesTouch() then
+		direction = aimAssist:apply(direction, aimCandidates(camera.CFrame.Position, direction), false)
+	end
+
 	-- 本地立刻给手感。方向取当前的相机朝向——包括此刻已经叠加的后坐力，
 	-- 也就是"你瞄哪打哪"，而不是把枪口硬掰回原位。
 	recoil:kick(Weapons.get(currentWeaponId))
 
-	Net.Fire:FireServer(camera.CFrame.LookVector, workspace:GetServerTimeNow())
+	Net.Fire:FireServer(direction, workspace:GetServerTimeNow())
 end
 
 function WeaponController.onSwitch(slot)
