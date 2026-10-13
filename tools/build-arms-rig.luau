@@ -17,21 +17,28 @@ local UPPER_THICK = 0.36
 local FORE_THICK = 0.32
 local HAND_SIZE = Vector3.new(0.32, 0.28, 0.36)
 
--- 肩关节刻意压到相机下方很远：上臂因此整个落在画面外，
--- 第一人称里看到的是两条前臂从画面底部伸进来——这才是正常的样子。
--- 如果肩膀和相机齐平，上臂会几乎糊在镜头上。
+-- 关节点位置（模型空间，-Z 前、+Y 上、+X 右）。
+--
+-- 目标：手落在相机下方约 0.5、前方约 1.2（还要再乘 ViewModel 里的 RIG_SCALE 和位移）。
+-- 手压太低会直接掉到屏幕下缘以外——第一版手在相机下方 0.97，结果整个下半屏
+-- 只剩一块白色，看不出是手臂。
+--
+-- 肩关节仍然压得很低：上臂因此落在画面外，第一人称里看到的是两条前臂
+-- 从画面底部伸进来，这才是正常的样子。
 local ARMS = {
 	Right = {
-		shoulder = Vector3.new(0.48, -1.05, 0.30),
-		elbow = Vector3.new(0.44, -0.92, -0.35),
-		wrist = Vector3.new(0.36, -0.70, -0.92),
-		handEnd = Vector3.new(0.34, -0.66, -1.12),
+		shoulder = Vector3.new(0.42, -0.62, 0.20),
+		elbow = Vector3.new(0.40, -0.55, -0.35),
+		wrist = Vector3.new(0.34, -0.45, -0.85),
+		handEnd = Vector3.new(0.32, -0.42, -1.05),
 	},
 	Left = {
-		shoulder = Vector3.new(-0.48, -1.05, 0.30),
-		elbow = Vector3.new(-0.44, -0.92, -0.35),
-		wrist = Vector3.new(-0.18, -0.66, -0.98),
-		handEnd = Vector3.new(-0.10, -0.63, -1.14),
+		-- 左臂要**横过来够到枪的护木**，不是和右臂对称。
+		-- 对称的话左手会落在枪下方，看起来像两只手各拿各的。
+		shoulder = Vector3.new(-0.42, -0.62, 0.20),
+		elbow = Vector3.new(-0.40, -0.55, -0.35),
+		wrist = Vector3.new(0.00, -0.48, -0.95),
+		handEnd = Vector3.new(0.22, -0.38, -1.25),
 	},
 }
 

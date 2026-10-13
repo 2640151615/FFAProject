@@ -40,8 +40,15 @@ Weapons.Definitions = {
 		-- 竞技向：首发必准，扩散只在连发时累积。
 		firstShotSpread = 0,
 		viewmodel = "ViewModel_Rifle",
-		viewmodelScale = 0.45,
-		viewmodelPose = CFrame.new(0.24, -0.20, -0.58),
+		-- 枪要明显大于手臂。手臂部件（RIG_SCALE 0.75 后）约 0.24–0.27 studs，
+		-- 枪基准 3.26 × 0.20 = 0.65 studs。
+		--
+		-- ⚠ 这一版的观感是"枪清楚可见、能读作一把武器"，但**手臂偏大、挡视野**。
+		-- 要修的是手臂（RIG_SCALE 或骨架关节点），不是枪。见台账 Task 9 的说明。
+		viewmodelScale = 0.20,
+		-- 相对**右手**的握持位姿（不是相对相机）。
+		-- 这个值是对着实际模型和骨架调出来的，换模型或改手臂姿势都要重调。
+		viewmodelPose = CFrame.new(-0.0425, 0.0579, -0.0612, -0.0995, 0.9950, 0.0000, 0.1469, 0.0147, 0.9890, 0.9841, 0.0984, -0.1476),
 		fireSound = "rbxassetid://2047319236",
 		reloadSound = "rbxassetid://124349595603622",
 	},
@@ -60,9 +67,10 @@ Weapons.Definitions = {
 		recoilYaw = 0.3,
 		firstShotSpread = 0,
 		viewmodel = "ViewModel_Pistol",
-		viewmodelScale = 0.25,
-		-- 从模型自身的枪口标记量出来的：枪管沿 +Z，所以要转半圈才背对相机。
-		viewmodelPose = CFrame.new(0.32, -0.30, -0.66) * CFrame.Angles(0, math.rad(180), 0),
+		viewmodelScale = 0.20,
+		-- 和步枪共用同一个"相对右手"的位姿，只是缩放不同。
+		-- 三把武器都是单部件模型，形状差异靠缩放和后续微调吸收。
+		viewmodelPose = CFrame.new(-0.0425, 0.0579, -0.0612, -0.0995, 0.9950, 0.0000, 0.1469, 0.0147, 0.9890, 0.9841, 0.0984, -0.1476),
 		fireSound = "rbxassetid://143286342",
 		reloadSound = "rbxassetid://174295321",
 	},
@@ -82,8 +90,8 @@ Weapons.Definitions = {
 		firstShotSpread = 0,
 		-- 暂时借用步枪模型，等有正经的 SMG 模型再换。
 		viewmodel = "ViewModel_Rifle",
-		viewmodelScale = 0.38,
-		viewmodelPose = CFrame.new(0.26, -0.22, -0.58),
+		viewmodelScale = 0.14,
+		viewmodelPose = CFrame.new(-0.0425, 0.0579, -0.0612, -0.0995, 0.9950, 0.0000, 0.1469, 0.0147, 0.9890, 0.9841, 0.0984, -0.1476),
 		fireSound = "rbxassetid://2047319236",
 		reloadSound = "rbxassetid://124349595603622",
 	},
@@ -105,9 +113,8 @@ Weapons.Definitions = {
 		recoilYaw = 0,
 		firstShotSpread = 0,
 		viewmodel = "ViewModel_Knife",
-		viewmodelScale = 0.5,
-		-- 源模型刀刃沿 Y 立起，所以往前放倒。
-		viewmodelPose = CFrame.new(0.26, -0.26, -0.55) * CFrame.Angles(math.rad(-90), 0, 0),
+		viewmodelScale = 0.30,
+		viewmodelPose = CFrame.new(-0.0425, 0.0579, -0.0612, -0.0995, 0.9950, 0.0000, 0.1469, 0.0147, 0.9890, 0.9841, 0.0984, -0.1476),
 		fireSound = "rbxassetid://153647529",
 		reloadSound = nil,
 	},

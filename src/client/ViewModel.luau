@@ -20,8 +20,17 @@ local player = Players.LocalPlayer
 local ARMS_NAME = "ViewModel_Arms"
 
 -- 骨架根相对相机的静止位姿。手臂是在模型空间里摆好持枪姿态的，
--- 所以根节点放在相机原点上即可。
-local RIG_POSE = CFrame.new()
+-- 所以根节点放在相机原点上即可——但模型空间是按"看得清结构"建的，
+-- 贴到相机上时通常还要整体前推/下压一点，否则会糊在镜头上。
+local RIG_POSE = CFrame.new(0, -0.18, -0.42)
+
+-- 整套骨架的统一缩放。
+--
+-- 骨架是**按一个便于阅读的尺寸建的**（部件 0.3 出头），直接怼到相机前会显得巨大。
+-- 与其回头改每个关节坐标，不如在这里统一缩放：部件尺寸和每个 Motor6D 的
+-- C0/C1 位置一起乘这个系数，旋转保持不变。这样"骨架长什么样"和
+-- "它在屏幕上多大"是两个独立的旋钮。
+local RIG_SCALE = 0.75
 
 local arms = nil
 local weaponPart = nil
@@ -71,6 +80,16 @@ local function ensureArms()
 	end
 
 	local rig = template:Clone()
+
+	-- 统一缩放。
+	--
+	-- 用引擎的 `Model:ScaleTo()`，**不要手写**"部件尺寸 ×s、C0/C1 位置 ×s"：
+	-- C0 和 C1 各自带旋转，`T(a·s)·Ra · (T(b·s)·Rb)⁻¹` 并不等于 `T((a−b)·s)`，
+	-- 手写出来位置会偏——实测偏了 0.27 studs，而且看起来只是"手臂位置有点怪"，
+	-- 很难归因。ScaleTo 会正确处理关节链。
+	if RIG_SCALE ~= 1 then
+		rig:ScaleTo(RIG_SCALE)
+	end
 
 	for _, descendant in ipairs(rig:GetDescendants()) do
 		if descendant:IsA("BasePart") then
