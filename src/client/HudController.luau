@@ -16,6 +16,8 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterGui = game:GetService("StarterGui")
 
 local Net = require(ReplicatedStorage:WaitForChild("Net"))
+local Config = require(ReplicatedStorage:WaitForChild("Config"))
+local SoundKit = require(script.Parent.SoundKit)
 
 local HudController = {}
 
@@ -227,7 +229,11 @@ function HudController.init()
 	hitmarker = buildHitmarker(screenGui)
 	healthFill, healthLabel = buildHealth(screenGui)
 
-	Net.HitConfirm.OnClientEvent:Connect(flashHitmarker)
+	Net.HitConfirm.OnClientEvent:Connect(function()
+		flashHitmarker()
+		-- 命中音走本地音：它是给射手的反馈，不该有方位感
+		SoundKit.playLocal(Config.HitmarkerSound, 0.45)
+	end)
 
 	if player.Character then
 		watchHumanoid(player.Character)

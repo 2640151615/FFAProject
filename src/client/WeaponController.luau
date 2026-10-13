@@ -20,6 +20,7 @@ local Input = require(script.Parent.Input)
 local ViewModel = require(script.Parent.ViewModel)
 local Recoil = require(script.Parent.Recoil)
 local AimAssist = require(script.Parent.AimAssist)
+local SoundKit = require(script.Parent.SoundKit)
 
 local WeaponController = {}
 
@@ -108,7 +109,12 @@ function WeaponController.onFire()
 
 	-- 本地立刻给手感。方向取当前的相机朝向——包括此刻已经叠加的后坐力，
 	-- 也就是"你瞄哪打哪"，而不是把枪口硬掰回原位。
-	recoil:kick(Weapons.get(currentWeaponId))
+	local weapon = Weapons.get(currentWeaponId)
+	recoil:kick(weapon)
+
+	-- 自己的枪声走本地音（不分方位）：它不该因为自己站的位置忽大忽小。
+	-- 别人的枪声走世界音，那个才需要方位——由 SoundKit 那边按位置播。
+	SoundKit.playLocal(weapon and weapon.fireSound, 0.5)
 
 	Net.Fire:FireServer(direction, workspace:GetServerTimeNow())
 end
