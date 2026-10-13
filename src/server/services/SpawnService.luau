@@ -83,6 +83,15 @@ local function onCharacter(player, character)
 		return
 	end
 
+	-- 关掉角色**头顶那个 3D 血条**。
+	--
+	-- 默认是 `DisplayWhenDamaged`：你打伤敌人后就能看到他的血量，等于白送
+	-- "他快死了、再补一枪" 这条信息。竞技向不给这种信息。
+	--
+	-- 注意别和 `SetCoreGuiEnabled(CoreGuiType.Health, false)` 搞混——那关的是
+	-- 右上角那块屏幕 UI（在 HudController 里），是另一回事。
+	humanoid.HealthDisplayType = Enum.HumanoidHealthDisplayType.AlwaysOff
+
 	humanoid.Died:Connect(function()
 		PlayerStateService.markDead(player)
 		lastPositions[player] = nil
