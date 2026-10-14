@@ -13,7 +13,7 @@ local RS = game:GetService("ReplicatedStorage")
 
 -- 骨架定义：模型空间，-Z 是前方，+Y 是上，+X 是右
 -- 每段用两个关节点描述，部件从一端指向另一端
-local UPPER_THICK = 0.36
+local UPPER_THICK = 0.5
 local FORE_THICK = 0.32
 local HAND_SIZE = Vector3.new(0.32, 0.28, 0.36)
 
