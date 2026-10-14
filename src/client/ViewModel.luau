@@ -27,7 +27,7 @@ local ARMS_NAME = "ViewModel_Arms"
 --
 -- 判断部件在不在画面里，**不能只看它的中心点投影**：上臂的中心在相机后方，
 -- 但它的边缘探进了画面。要看八个角投影出来的包围盒。
-local RIG_POSE = CFrame.new(0, -0.12, -0.95)
+local RIG_POSE = CFrame.new(0, -0.12, -1.25)
 
 -- 整套骨架的统一缩放。
 --
